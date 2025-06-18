@@ -66,7 +66,7 @@ func (s *Server) Start(ctx context.Context) error {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		srv.Shutdown(shutdownCtx)
+		_ = srv.Shutdown(shutdownCtx)
 	}()
 
 	slog.Info("starting server", slog.Int("port", s.config.ServerPort))
