@@ -48,8 +48,10 @@ services:
     image: apachepulsar/pulsar:4.0.2
     command: >
       bash -c "sleep 5 && \
-                exec bin/pulsar-admin --admin-url=http://pulsar:8080 namespaces create public/webhook && \
-                exec bin/pulsar-admin --admin-url=http://pulsar:8080 topics create public/webhook/s3-events"
+                exec bin/pulsar-admin --admin-url=http://pulsar:8080 \
+                  namespaces create public/webhook && \
+                exec bin/pulsar-admin --admin-url=http://pulsar:8080 \
+                  topics create public/webhook/s3-events"
     depends_on:
       pulsar:
         condition: service_healthy
@@ -57,9 +59,9 @@ services:
   lgtm:
     image: grafana/otel-lgtm
     ports:
-      - "3000:3000" # Grafana UI
-      - "4317:4317" # OTLP
-      - "4318:4318" # OTLPHTTP
+      - "3000:3000"  # Grafana UI
+      - "4317:4317"  # OTLP
+      - "4318:4318"  # OTLPHTTP
     volumes:
       - ./docker/grafana/dashboards:/var/lib/grafana/dashboards
       - ./docker/grafana/dashboards.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/grafana-dashboards.yaml
