@@ -23,7 +23,7 @@ jobs:
     name: lint
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Go
         uses: actions/setup-go@v5
@@ -31,9 +31,9 @@ jobs:
           go-version: ${{ matrix.go-version }}
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v5.2.0
+        uses: golangci/golangci-lint-action@v8
         with:
-          version: v1.62.2
+          version: v2.1
           args: --timeout=5m --enable=bodyclose
 
   yamllint:
