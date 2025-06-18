@@ -4,12 +4,16 @@ import (
 	"context"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"alpineworks.io/ootel"
-	"github.com/michaelpeterswa/go-start/internal/config"
-	"github.com/michaelpeterswa/go-start/internal/logging"
+	"github.com/alpineworks/versitygw-webhook-pulsar-proxy/internal/config"
+	"github.com/alpineworks/versitygw-webhook-pulsar-proxy/internal/logging"
+	"github.com/alpineworks/versitygw-webhook-pulsar-proxy/internal/server"
 	"go.opentelemetry.io/contrib/instrumentation/host"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 )
@@ -81,5 +85,27 @@ func main() {
 		_ = shutdown(ctx)
 	}()
 
-	<-time.After(2 * time.Minute)
+	srv, err := server.New(c)
+	if err != nil {
+		slog.Error("could not create server", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	defer srv.Close()
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigChan
+		slog.Info("received shutdown signal")
+		cancel()
+	}()
+
+	if err := srv.Start(ctx); err != nil && err != http.ErrServerClosed {
+		slog.Error("server error", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
 }

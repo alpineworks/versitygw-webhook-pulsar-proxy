@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/caarlos0/env/v11"
 )
@@ -16,8 +17,13 @@ type Config struct {
 
 	TracingEnabled    bool    `env:"TRACING_ENABLED" envDefault:"false"`
 	TracingSampleRate float64 `env:"TRACING_SAMPLERATE" envDefault:"0.01"`
-	TracingService    string  `env:"TRACING_SERVICE" envDefault:"katalog-agent"`
+	TracingService    string  `env:"TRACING_SERVICE" envDefault:"versitygw-webhook-pulsar-proxy"`
 	TracingVersion    string  `env:"TRACING_VERSION"`
+
+	ServerPort           int           `env:"SERVER_PORT" envDefault:"8080"`
+	PulsarURL            string        `env:"PULSAR_URL" envDefault:"pulsar://localhost:6650"`
+	PulsarTopic          string        `env:"PULSAR_TOPIC" envDefault:"s3-events"`
+	PulsarProduceTimeout time.Duration `env:"PULSAR_PRODUCE_TIMEOUT_SECONDS" envDefault:"5s"`
 }
 
 func NewConfig() (*Config, error) {
