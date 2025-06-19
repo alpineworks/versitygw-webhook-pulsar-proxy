@@ -95,25 +95,25 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	slog.Debug("received webhook request", slog.String("body", string(body)))
 
-	var eventRecord s3event.EventRecord
-	err = json.Unmarshal(body, &eventRecord)
+	var eventSchema s3event.EventSchema
+	err = json.Unmarshal(body, &eventSchema)
 	if err != nil {
-		slog.Error("failed to unmarshal event record", slog.String("error", err.Error()))
+		slog.Error("failed to unmarshal event schema", slog.String("error", err.Error()))
 		rfc9457.NewRFC9457(
 			rfc9457.WithStatus(http.StatusBadRequest),
-			rfc9457.WithDetail("failed to unmarshal event record"),
+			rfc9457.WithDetail("failed to unmarshal event schema"),
 			rfc9457.WithTitle("bad request"),
 			rfc9457.WithInstance("/webhook"),
 		).ServeHTTP(w, r)
 		return
 	}
 
-	eventData, err := json.Marshal(&eventRecord)
+	eventData, err := json.Marshal(&eventSchema)
 	if err != nil {
-		slog.Error("failed to marshal event record", slog.String("error", err.Error()))
+		slog.Error("failed to marshal event schema", slog.String("error", err.Error()))
 		rfc9457.NewRFC9457(
 			rfc9457.WithStatus(http.StatusInternalServerError),
-			rfc9457.WithDetail("Failed to process the event record"),
+			rfc9457.WithDetail("Failed to process the event schema"),
 			rfc9457.WithTitle("Internal server error"),
 			rfc9457.WithInstance("/webhook"),
 		).ServeHTTP(w, r)
@@ -138,12 +138,12 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Info("event forwarded to pulsar",
-		slog.String("eventName", string(eventRecord.EventName)),
-		slog.String("eventSource", eventRecord.EventSource))
+		slog.Int("records", len(eventSchema.Records)),
+	)
 
 	w.WriteHeader(http.StatusCreated)
 	response := WebhookResponse{
-		Message: "event forwarded to pulsar",
+		Message: "event/s forwarded to pulsar",
 		Code:    http.StatusCreated,
 	}
 
@@ -157,5 +157,5 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		).ServeHTTP(w, r)
 		return
 	}
-	slog.Info("response sent", slog.String("message", response.Message), slog.Int("code", response.Code))
+	slog.Debug("response sent", slog.String("message", response.Message), slog.Int("code", response.Code))
 }
