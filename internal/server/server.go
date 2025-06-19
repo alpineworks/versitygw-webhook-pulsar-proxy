@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"time"
@@ -79,14 +80,29 @@ type WebhookResponse struct {
 }
 
 func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
-	var eventRecord s3event.EventRecord
-
-	if err := json.NewDecoder(r.Body).Decode(&eventRecord); err != nil {
-		slog.Error("failed to decode event record", slog.String("error", err.Error()))
+	defer r.Body.Close()
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		slog.Error("failed to read request body", slog.String("error", err.Error()))
 		rfc9457.NewRFC9457(
 			rfc9457.WithStatus(http.StatusBadRequest),
-			rfc9457.WithDetail("The request body contains invalid JSON"),
-			rfc9457.WithTitle("Invalid JSON payload"),
+			rfc9457.WithDetail("failed to read request body"),
+			rfc9457.WithTitle("bad request"),
+			rfc9457.WithInstance("/webhook"),
+		).ServeHTTP(w, r)
+		return
+	}
+
+	slog.Debug("received webhook request", slog.String("body", string(body)))
+
+	var eventRecord s3event.EventRecord
+	err = json.Unmarshal(body, &eventRecord)
+	if err != nil {
+		slog.Error("failed to unmarshal event record", slog.String("error", err.Error()))
+		rfc9457.NewRFC9457(
+			rfc9457.WithStatus(http.StatusBadRequest),
+			rfc9457.WithDetail("failed to unmarshal event record"),
+			rfc9457.WithTitle("bad request"),
 			rfc9457.WithInstance("/webhook"),
 		).ServeHTTP(w, r)
 		return
